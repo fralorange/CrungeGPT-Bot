@@ -2,6 +2,7 @@
 using FreelanceBotBase.Bot.Commands.Ask;
 using FreelanceBotBase.Bot.Commands.Interface;
 using FreelanceBotBase.Bot.Commands.Null;
+using FreelanceBotBase.Bot.Commands.Usage;
 using Telegram.Bot;
 
 namespace FreelanceBotBase.Bot.Commands.Factory
@@ -22,6 +23,7 @@ namespace FreelanceBotBase.Bot.Commands.Factory
             return commandName switch
             {
                 "/ask" => new AskCommand(_botClient, _chatGpt),
+                "/usage" => new UsageCommand(_botClient),
                 _ => new NullCommand()
             };
         }
