@@ -1,4 +1,4 @@
-﻿using FreelanceBotBase.Infrastructure.Settings;
+﻿using FreelanceBotBase.Infrastructure.Configuration;
 using FreelanceBotBase.Infrastructure.Extensions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -7,6 +7,8 @@ using Telegram.Bot.Polling;
 using FreelanceBotBase.Bot.Handlers.Update;
 using FreelanceBotBase.Bot.Services.Receiver;
 using FreelanceBotBase.Bot.Services.Polling;
+using ChatGPT.Net;
+using FreelanceBotBase.Bot.Commands.Factory;
 
 IHost host = Host.CreateDefaultBuilder(args)
     .ConfigureServices((context, services) =>
@@ -14,9 +16,17 @@ IHost host = Host.CreateDefaultBuilder(args)
         services.Configure<BotConfiguration>(
             context.Configuration.GetSection(BotConfiguration.Configuration));
 
+        services.Configure<OpenAIConfiguration>(
+            context.Configuration.GetSection(OpenAIConfiguration.Configuration));
+
         services.Configure<ReceiverOptions>(
             context.Configuration.GetSection(nameof(ReceiverOptions)));
 
+        services.AddSingleton(sp =>
+        {
+            OpenAIConfiguration? apiConfig = sp.GetConfiguration<OpenAIConfiguration>();
+            return new ChatGpt(apiConfig.ApiKey);
+        });
 
         services.AddHttpClient("telegram_bot_client")
             .AddTypedClient<ITelegramBotClient>((httpClient, sp) =>
@@ -26,6 +36,7 @@ IHost host = Host.CreateDefaultBuilder(args)
                 return new TelegramBotClient(options, httpClient);
             });
 
+        services.AddSingleton<CommandFactory>();
         services.AddScoped<UpdateHandler>();
         services.AddScoped<ReceiverService>();
         services.AddHostedService<PollingService>();

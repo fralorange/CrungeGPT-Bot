@@ -1,6 +1,5 @@
-﻿using FreelanceBotBase.Bot.Commands.Const;
+﻿using FreelanceBotBase.Bot.Commands.Factory;
 using FreelanceBotBase.Bot.Commands.Interface;
-using FreelanceBotBase.Bot.Commands.Usage;
 using Microsoft.Extensions.Logging;
 using Telegram.Bot;
 using Telegram.Bot.Exceptions;
@@ -14,11 +13,13 @@ namespace FreelanceBotBase.Bot.Handlers.Update
     {
         private readonly ITelegramBotClient _botClient;
         private readonly ILogger<UpdateHandler> _logger;
+        private readonly CommandFactory _commandFactory;
 
-        public UpdateHandler(ITelegramBotClient botClient, ILogger<UpdateHandler> logger)
+        public UpdateHandler(ITelegramBotClient botClient, ILogger<UpdateHandler> logger, CommandFactory commandFactory)
         {
             _botClient = botClient;
             _logger = logger;
+            _commandFactory = commandFactory;
         }
 
         public async Task HandleUpdateAsync(ITelegramBotClient botClient, Telegram.Bot.Types.Update update, CancellationToken cancellationToken)
@@ -42,14 +43,12 @@ namespace FreelanceBotBase.Bot.Handlers.Update
             if (message.Text is not { } messageText)
                 return;
 
-            ICommand command = CommandsDictionary.All.TryGetValue(messageText.Split(' ')[0], out var commandFunc)
-                ? commandFunc(_botClient)
-                : new UsageCommand(_botClient);
+            ICommand command = _commandFactory.CreateCommand(messageText.Split(' ')[0]);
 
             Message sentMessage = await command.ExecuteAsync(message, cancellationToken);
             _logger.LogInformation("The message was sent with id: {SentMessageId}", sentMessage.MessageId);
         }
-        
+
         private async Task BotOnCallbackQueryReceived(CallbackQuery callbackQuery, CancellationToken cancellationToken)
         {
             _logger.LogInformation("Received inline keyboard callback from {CallbackQueryId}", callbackQuery.Id);
